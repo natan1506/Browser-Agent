@@ -1,17 +1,19 @@
 /** @type {import('tailwindcss').Config} */
 export default {
+  darkMode: 'class',
   content: ['./src/**/*.{ts,tsx}', './index.html'],
   theme: {
     extend: {
       colors: {
-        bg: '#080810',
-        surface: '#0f0f1a',
-        border: '#1e1e35',
-        accent: '#6366f1',
-        'accent-cyan': '#22d3ee',
-        success: '#10b981',
-        'text-primary': '#f1f5f9',
-        'text-secondary': '#94a3b8',
+        page: 'var(--page-bg)',
+        surface: 'var(--surface-bg)',
+        border: 'var(--border-color)',
+        accent: 'var(--accent)',
+        'accent-cyan': 'var(--accent-cyan)',
+        success: 'var(--success)',
+        'text-primary': 'var(--text-primary)',
+        'text-secondary': 'var(--text-secondary)',
+        'hover-bg': 'var(--hover-bg)',
       },
       keyframes: {
         'slide-in': {

@@ -16,6 +16,8 @@ const FORMAT_LABELS: Record<ApiFormat, string> = {
   openrouter: 'OpenRouter',
   deepseek:   'DeepSeek',
   ollama:     'Ollama (local)',
+  groq:       'Groq',
+  opencode:   'OpenCode (local)',
 };
 
 export function ProviderCard({ provider, color, onChange, onDelete }: ProviderCardProps) {
@@ -47,7 +49,7 @@ export function ProviderCard({ provider, color, onChange, onDelete }: ProviderCa
     <div
       className={[
         'rounded-xl border transition-all duration-300 overflow-hidden',
-        provider.enabled ? 'border-[#1e1e35] bg-[#0f0f1a]' : 'border-[#1e1e35] bg-[#0a0a14]',
+        provider.enabled ? 'border-border bg-surface' : 'border-border bg-page',
       ].join(' ')}
       style={
         provider.enabled
@@ -65,14 +67,14 @@ export function ProviderCard({ provider, color, onChange, onDelete }: ProviderCa
               boxShadow: provider.enabled ? `0 0 6px ${color}` : 'none',
             }}
           />
-          <span className="text-sm font-semibold text-[#f1f5f9] truncate">{provider.name}</span>
+          <span className="text-sm font-semibold text-text-primary truncate">{provider.name}</span>
           {isKeyFree && (
-            <span className="flex-shrink-0 text-[10px] px-1.5 py-0.5 rounded bg-[#10b981]/10 text-[#10b981] border border-[#10b981]/20">
+            <span className="flex-shrink-0 text-[10px] px-1.5 py-0.5 rounded bg-success/10 text-success border border-success/20">
               local
             </span>
           )}
           {provider.isCustom && (
-            <span className="flex-shrink-0 text-[10px] px-1.5 py-0.5 rounded bg-[#6366f1]/10 text-[#6366f1] border border-[#6366f1]/20">
+            <span className="flex-shrink-0 text-[10px] px-1.5 py-0.5 rounded bg-accent/10 text-accent border border-accent/20">
               custom
             </span>
           )}
@@ -91,7 +93,7 @@ export function ProviderCard({ provider, color, onChange, onDelete }: ProviderCa
                 </button>
                 <button
                   onClick={() => setConfirmDelete(false)}
-                  className="text-[10px] text-[#94a3b8] hover:text-[#f1f5f9]"
+                  className="text-[10px] text-text-secondary hover:text-text-primary"
                 >
                   ✕
                 </button>
@@ -99,7 +101,7 @@ export function ProviderCard({ provider, color, onChange, onDelete }: ProviderCa
             ) : (
               <button
                 onClick={() => setConfirmDelete(true)}
-                className="text-sm text-[#94a3b8]/40 hover:text-red-400 transition-colors"
+                className="text-sm text-text-secondary/40 hover:text-red-400 transition-colors"
                 title="Delete provider"
               >
                 🗑
@@ -115,7 +117,7 @@ export function ProviderCard({ provider, color, onChange, onDelete }: ProviderCa
             aria-label={provider.enabled ? 'Disable provider' : 'Enable provider'}
             className={[
               'relative flex-shrink-0 rounded-full transition-colors duration-200 focus:outline-none',
-              provider.enabled ? 'bg-[#6366f1]' : 'bg-[#1e1e35]',
+              provider.enabled ? 'bg-accent' : 'bg-hover-bg',
             ].join(' ')}
             style={{ width: 44, height: 24 }}
           >
@@ -138,18 +140,18 @@ export function ProviderCard({ provider, color, onChange, onDelete }: ProviderCa
       </div>
 
       {/* Body */}
-      <div className="px-4 pb-4 space-y-3 border-t border-[#1e1e35]">
+      <div className="px-4 pb-4 space-y-3 border-t border-border">
 
         {/* API Format selector — custom providers only */}
         {provider.isCustom && (
           <div className="pt-3">
-            <label className="block text-[10px] uppercase tracking-wider text-[#94a3b8] mb-1.5">
+            <label className="block text-[10px] uppercase tracking-wider text-text-secondary mb-1.5">
               API Format
             </label>
             <select
               value={provider.apiFormat ?? 'openai'}
               onChange={(e) => update({ apiFormat: e.target.value as ApiFormat })}
-              className="w-full bg-[#080810] border border-[#1e1e35] rounded-lg px-2.5 py-1.5 text-xs text-[#f1f5f9] focus:outline-none focus:border-[#6366f1] transition-colors"
+              className="w-full bg-page border border-border rounded-lg px-2.5 py-1.5 text-xs text-text-primary focus:outline-none focus:border-accent transition-colors"
             >
               {(Object.entries(FORMAT_LABELS) as [ApiFormat, string][]).map(([id, label]) => (
                 <option key={id} value={id}>{label}</option>
@@ -161,7 +163,7 @@ export function ProviderCard({ provider, color, onChange, onDelete }: ProviderCa
         {/* API Key */}
         {!isKeyFree && (
           <div className={provider.isCustom ? '' : 'pt-3'}>
-            <label className="block text-[10px] uppercase tracking-wider text-[#94a3b8] mb-1.5">
+            <label className="block text-[10px] uppercase tracking-wider text-text-secondary mb-1.5">
               API Key
             </label>
             <div className="flex gap-1.5">
@@ -170,11 +172,11 @@ export function ProviderCard({ provider, color, onChange, onDelete }: ProviderCa
                 value={provider.apiKey}
                 onChange={(e) => update({ apiKey: e.target.value })}
                 placeholder="sk-..."
-                className="flex-1 min-w-0 bg-[#080810] border border-[#1e1e35] rounded-lg px-2.5 py-1.5 text-xs text-[#f1f5f9] placeholder-[#94a3b8]/50 focus:outline-none focus:border-[#6366f1] transition-colors font-mono"
+                className="flex-1 min-w-0 bg-page border border-border rounded-lg px-2.5 py-1.5 text-xs text-text-primary placeholder-text-secondary/50 focus:outline-none focus:border-accent transition-colors font-mono"
               />
               <button
                 onClick={() => setShowKey((v) => !v)}
-                className="px-2 py-1.5 rounded-lg bg-[#080810] border border-[#1e1e35] text-[#94a3b8] hover:text-[#f1f5f9] transition-colors text-xs"
+                className="px-2 py-1.5 rounded-lg bg-page border border-border text-text-secondary hover:text-text-primary transition-colors text-xs"
                 title={showKey ? 'Hide' : 'Show'}
               >
                 {showKey ? '🙈' : '👁'}
@@ -185,26 +187,26 @@ export function ProviderCard({ provider, color, onChange, onDelete }: ProviderCa
 
         {/* Base URL */}
         <div className={!isKeyFree && !provider.isCustom ? '' : (provider.isCustom ? '' : 'pt-3')}>
-          <label className="block text-[10px] uppercase tracking-wider text-[#94a3b8] mb-1.5">
+          <label className="block text-[10px] uppercase tracking-wider text-text-secondary mb-1.5">
             Base URL
           </label>
           <input
             type="text"
             value={provider.baseUrl}
             onChange={(e) => update({ baseUrl: e.target.value })}
-            className="w-full bg-[#080810] border border-[#1e1e35] rounded-lg px-2.5 py-1.5 text-xs text-[#f1f5f9] placeholder-[#94a3b8]/50 focus:outline-none focus:border-[#6366f1] transition-colors font-mono"
+            className="w-full bg-page border border-border rounded-lg px-2.5 py-1.5 text-xs text-text-primary placeholder-text-secondary/50 focus:outline-none focus:border-accent transition-colors font-mono"
           />
         </div>
 
         {/* Model selector */}
         <div>
-          <label className="block text-[10px] uppercase tracking-wider text-[#94a3b8] mb-1.5">
+          <label className="block text-[10px] uppercase tracking-wider text-text-secondary mb-1.5">
             Model
           </label>
           <select
             value={provider.selectedModel}
             onChange={(e) => update({ selectedModel: e.target.value })}
-            className="w-full bg-[#080810] border border-[#1e1e35] rounded-lg px-2.5 py-1.5 text-xs text-[#f1f5f9] focus:outline-none focus:border-[#6366f1] transition-colors"
+            className="w-full bg-page border border-border rounded-lg px-2.5 py-1.5 text-xs text-text-primary focus:outline-none focus:border-accent transition-colors"
           >
             {provider.models.map((m) => (
               <option key={m} value={m}>{m}</option>
@@ -220,12 +222,12 @@ export function ProviderCard({ provider, color, onChange, onDelete }: ProviderCa
             onChange={(e) => setCustomModel(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && addModel()}
             placeholder="Add model ID…"
-            className="flex-1 min-w-0 bg-[#080810] border border-[#1e1e35] rounded-lg px-2.5 py-1.5 text-xs text-[#f1f5f9] placeholder-[#94a3b8]/50 focus:outline-none focus:border-[#6366f1] transition-colors"
+            className="flex-1 min-w-0 bg-page border border-border rounded-lg px-2.5 py-1.5 text-xs text-text-primary placeholder-text-secondary/50 focus:outline-none focus:border-accent transition-colors"
           />
           <button
             onClick={addModel}
             disabled={!customModel.trim()}
-            className="px-3 py-1.5 rounded-lg bg-[#6366f1]/10 border border-[#6366f1]/30 text-[#6366f1] text-xs hover:bg-[#6366f1]/20 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            className="px-3 py-1.5 rounded-lg bg-accent/10 border border-accent/30 text-accent text-xs hover:bg-accent/20 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           >
             Add
           </button>
@@ -237,12 +239,12 @@ export function ProviderCard({ provider, color, onChange, onDelete }: ProviderCa
             {provider.models.map((m) => (
               <span
                 key={m}
-                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#1e1e35] text-[10px] text-[#94a3b8]"
+                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-hover-bg text-[10px] text-text-secondary"
               >
                 {m}
                 <button
                   onClick={() => removeModel(m)}
-                  className="text-[#94a3b8]/60 hover:text-red-400 transition-colors leading-none"
+                  className="text-text-secondary/60 hover:text-red-400 transition-colors leading-none"
                 >
                   ×
                 </button>

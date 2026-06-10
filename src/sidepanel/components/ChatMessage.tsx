@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { Message, AgentStep, ContentAction } from '../../shared/types';
+import { stripActionTags } from '../../shared/utils';
 
 interface ChatMessageProps {
   message: Message;
@@ -64,7 +65,7 @@ function CopyButton({ text, className = '' }: { text: string; className?: string
       className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-medium transition-all duration-150
         ${copied
           ? 'bg-[#10b981]/15 text-[#10b981] border border-[#10b981]/25'
-          : 'bg-[#0f0f1a] text-[#94a3b8] border border-[#1e1e35] hover:text-[#f1f5f9] hover:border-[#6366f1]/40'
+          : 'bg-surface text-text-secondary border border-border hover:text-text-primary hover:border-accent/40'
         } ${className}`}
     >
       {copied ? '✓ Copied' : '⎘ Copy'}
@@ -84,7 +85,7 @@ function StepCard({ step }: { step: AgentStep }) {
       className={[
         'flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11px] border transition-colors',
         isRunning
-          ? 'bg-[#6366f1]/10 border-[#6366f1]/25 text-[#a5b4fc]'
+          ? 'bg-accent/10 border-accent/25 text-[#a5b4fc]'
           : isError
           ? 'bg-red-500/10 border-red-500/20 text-red-400'
           : 'bg-[#10b981]/8 border-[#10b981]/20 text-[#6ee7b7]',
@@ -95,7 +96,7 @@ function StepCard({ step }: { step: AgentStep }) {
           {[0, 1, 2].map((i) => (
             <span
               key={i}
-              className="w-1 h-1 rounded-full bg-[#6366f1] animate-bounce"
+              className="w-1 h-1 rounded-full bg-accent animate-bounce"
               style={{ animationDelay: `${i * 0.15}s` }}
             />
           ))}
@@ -109,7 +110,7 @@ function StepCard({ step }: { step: AgentStep }) {
       <span className="flex-1 truncate">{actionLabel(step.action)}</span>
 
       {step.preview && !isRunning && (
-        <span className={`truncate max-w-[120px] ${isError ? 'text-red-400/70' : 'text-[#94a3b8]'}`}>
+        <span className={`truncate max-w-[120px] ${isError ? 'text-red-400/70' : 'text-text-secondary'}`}>
           {step.preview}
         </span>
       )}
@@ -128,7 +129,7 @@ export function ChatMessage({ message, onRetry }: ChatMessageProps) {
     return (
       <div className="flex justify-end animate-slide-in">
         <div className="group max-w-[85%] space-y-1">
-          <div className="px-3 py-2 rounded-2xl rounded-tr-sm bg-[#6366f1]/20 border border-[#6366f1]/30 text-[#f1f5f9] text-sm leading-relaxed">
+          <div className="px-3 py-2 rounded-2xl rounded-tr-sm bg-accent/20 border border-accent/30 text-text-primary text-sm leading-relaxed">
             <p className="whitespace-pre-wrap break-words">{message.content}</p>
           </div>
 
@@ -139,7 +140,7 @@ export function ChatMessage({ message, onRetry }: ChatMessageProps) {
               <button
                 onClick={() => onRetry(message.content)}
                 title="Retry"
-                className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-medium bg-[#0f0f1a] text-[#94a3b8] border border-[#1e1e35] hover:text-[#f1f5f9] hover:border-[#6366f1]/40 transition-all duration-150"
+                className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-medium bg-surface text-text-secondary border border-border hover:text-text-primary hover:border-accent/40 transition-all duration-150"
               >
                 ↺ Retry
               </button>
@@ -153,7 +154,7 @@ export function ChatMessage({ message, onRetry }: ChatMessageProps) {
   return (
     <div className="flex gap-2 animate-slide-in">
       {/* Avatar */}
-      <div className="flex-shrink-0 w-5 h-5 mt-0.5 rounded bg-gradient-to-br from-[#6366f1] to-[#22d3ee] flex items-center justify-center text-[8px] font-bold text-white">
+      <div className="flex-shrink-0 w-5 h-5 mt-0.5 rounded bg-gradient-to-br from-accent to-accent-cyan flex items-center justify-center text-[8px] font-bold text-white">
         AI
       </div>
 
@@ -164,8 +165,8 @@ export function ChatMessage({ message, onRetry }: ChatMessageProps) {
           const showBubble = visibleContent || message.isStreaming;
           if (!showBubble) return null;
           return (
-            <div className="bg-[#0f0f1a] border border-l-2 border-[#1e1e35] border-l-[#6366f1] rounded-2xl rounded-tl-sm px-3 py-2">
-              <div className="text-sm text-[#f1f5f9] leading-relaxed">
+            <div className="bg-surface border border-l-2 border-border border-l-accent rounded-2xl rounded-tl-sm px-3 py-2">
+              <div className="text-sm text-text-primary leading-relaxed">
                 {visibleContent ? (
                   <FormattedContent content={message.content} />
                 ) : null}
@@ -174,14 +175,14 @@ export function ChatMessage({ message, onRetry }: ChatMessageProps) {
                     {[0, 1, 2].map((i) => (
                       <span
                         key={i}
-                        className="w-1.5 h-1.5 rounded-full bg-[#6366f1] animate-bounce"
+                        className="w-1.5 h-1.5 rounded-full bg-accent animate-bounce"
                         style={{ animationDelay: `${i * 0.15}s` }}
                       />
                     ))}
                   </span>
                 )}
                 {message.isStreaming && visibleContent && (
-                  <span className="inline-block w-0.5 h-3.5 bg-[#6366f1] ml-0.5 animate-blink align-middle" />
+                  <span className="inline-block w-0.5 h-3.5 bg-accent ml-0.5 animate-blink align-middle" />
                 )}
               </div>
             </div>
@@ -208,13 +209,8 @@ export function ChatMessage({ message, onRetry }: ChatMessageProps) {
   );
 }
 
-/** Strip any leaked <action>/<tool_call> tags before rendering */
 function cleanContent(raw: string): string {
-  return raw
-    .replace(/<action>[\s\S]*?<\/action>/g, '')
-    .replace(/<tool_call>[\s\S]*?<\/tool_call>/g, '')
-    .replace(/\n{3,}/g, '\n\n')
-    .trim();
+  return stripActionTags(raw);
 }
 
 // ── Inline content formatter (code blocks + inline code) ──────────────────
@@ -233,15 +229,15 @@ function FormattedContent({ content }: { content: string }) {
           return (
             <pre
               key={i}
-              className="mt-2 mb-2 bg-[#080810] rounded-lg p-3 overflow-x-auto text-xs border border-[#1e1e35] relative group/code"
+              className="mt-2 mb-2 bg-page rounded-lg p-3 overflow-x-auto text-xs border border-border relative group/code"
             >
               <div className="flex items-center justify-between mb-1">
                 {lang && (
-                  <div className="text-[10px] text-[#6366f1] font-mono uppercase">{lang}</div>
+                  <div className="text-[10px] text-accent font-mono uppercase">{lang}</div>
                 )}
                 <CopyButton text={code} className="ml-auto opacity-0 group-hover/code:opacity-100" />
               </div>
-              <code className="font-mono text-[#f1f5f9]">{code}</code>
+              <code className="font-mono text-text-primary">{code}</code>
             </pre>
           );
         }
@@ -253,7 +249,7 @@ function FormattedContent({ content }: { content: string }) {
               seg.startsWith('`') && seg.endsWith('`') ? (
                 <code
                   key={j}
-                  className="bg-[#080810] text-[#22d3ee] text-xs px-1 py-0.5 rounded font-mono"
+                  className="bg-page text-accent-cyan text-xs px-1 py-0.5 rounded font-mono"
                 >
                   {seg.slice(1, -1)}
                 </code>

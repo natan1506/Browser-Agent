@@ -13,7 +13,7 @@ export function Soul() {
   if (!soul) {
     return (
       <div className="flex items-center justify-center h-full">
-        <span className="text-xs text-[#94a3b8]">Loading...</span>
+        <span className="text-xs text-text-secondary">Loading...</span>
       </div>
     );
   }
@@ -22,8 +22,8 @@ export function Soul() {
     <div className="h-full overflow-y-auto px-4 py-4">
       {/* Header */}
       <div className="mb-5">
-        <h2 className="text-sm font-semibold text-[#f1f5f9]">Agent Soul</h2>
-        <p className="text-xs text-[#94a3b8] mt-1">
+        <h2 className="text-sm font-semibold text-text-primary">Agent Soul</h2>
+        <p className="text-xs text-text-secondary mt-1">
           Define your agent's personality, capabilities, and response style.
         </p>
       </div>
@@ -31,25 +31,25 @@ export function Soul() {
       <SoulEditor soul={soul} onChange={setSoul} />
 
       {/* Tips */}
-      <div className="mt-6 p-3 rounded-xl bg-[#6366f1]/5 border border-[#6366f1]/15">
-        <p className="text-[10px] font-semibold text-[#6366f1] uppercase tracking-wider mb-2">
+      <div className="mt-6 p-3 rounded-xl bg-accent/5 border border-accent/15">
+        <p className="text-[10px] font-semibold text-accent uppercase tracking-wider mb-2">
           Tips
         </p>
-        <ul className="space-y-1.5 text-xs text-[#94a3b8]">
+        <ul className="space-y-1.5 text-xs text-text-secondary">
           <li className="flex gap-2">
-            <span className="text-[#6366f1] flex-shrink-0">→</span>
+            <span className="text-accent flex-shrink-0">→</span>
             Mention the language you want responses in
           </li>
           <li className="flex gap-2">
-            <span className="text-[#6366f1] flex-shrink-0">→</span>
+            <span className="text-accent flex-shrink-0">→</span>
             Describe the agent's tone: formal, casual, concise
           </li>
           <li className="flex gap-2">
-            <span className="text-[#6366f1] flex-shrink-0">→</span>
+            <span className="text-accent flex-shrink-0">→</span>
             List capabilities or tools the agent should use
           </li>
           <li className="flex gap-2">
-            <span className="text-[#6366f1] flex-shrink-0">→</span>
+            <span className="text-accent flex-shrink-0">→</span>
             Add domain knowledge or constraints
           </li>
         </ul>

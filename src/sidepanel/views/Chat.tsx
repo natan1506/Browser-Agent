@@ -26,7 +26,7 @@ function FallbacksPanel({
   onChange: (fallbacks: FallbackConfig[]) => void;
 }) {
   const readyProviders = Object.values(providers).filter(
-    (p) => p.enabled && p.apiKey || p.id === 'ollama'
+    (p) => p.enabled && (p.apiKey || p.id === 'ollama')
   );
 
   const addFallback = () => {
@@ -50,14 +50,14 @@ function FallbacksPanel({
         const models = prov?.models ?? [];
         return (
           <div key={i} className="flex items-center gap-1.5">
-            <span className="text-[10px] text-[#94a3b8] w-3 text-right shrink-0">{i + 1}</span>
+            <span className="text-[10px] text-text-secondary w-3 text-right shrink-0">{i + 1}</span>
             <select
               value={fb.provider}
               onChange={(e) => {
                 const p = providers[e.target.value];
                 updateFallback(i, { provider: e.target.value, model: p?.selectedModel ?? '' });
               }}
-              className="flex-1 min-w-0 bg-[#080810] border border-[#1e1e35] rounded-lg px-2 py-1 text-[11px] text-[#f1f5f9] focus:outline-none focus:border-[#6366f1] transition-colors"
+              className="flex-1 min-w-0 bg-page border border-border rounded-lg px-2 py-1 text-[11px] text-text-primary focus:outline-none focus:border-accent transition-colors"
             >
               {Object.values(providers).filter((p) => p.enabled).map((p) => (
                 <option key={p.id} value={p.id}>{p.name}</option>
@@ -66,7 +66,7 @@ function FallbacksPanel({
             <select
               value={fb.model}
               onChange={(e) => updateFallback(i, { model: e.target.value })}
-              className="flex-1 min-w-0 bg-[#080810] border border-[#1e1e35] rounded-lg px-2 py-1 text-[11px] text-[#f1f5f9] focus:outline-none focus:border-[#6366f1] transition-colors font-mono"
+              className="flex-1 min-w-0 bg-page border border-border rounded-lg px-2 py-1 text-[11px] text-text-primary focus:outline-none focus:border-accent transition-colors font-mono"
             >
               {models.map((m) => (
                 <option key={m} value={m}>{m}</option>
@@ -74,7 +74,7 @@ function FallbacksPanel({
             </select>
             <button
               onClick={() => removeFallback(i)}
-              className="shrink-0 text-[#94a3b8] hover:text-red-400 text-sm leading-none transition-colors px-0.5"
+              className="shrink-0 text-text-secondary hover:text-red-400 text-sm leading-none transition-colors px-0.5"
               title="Remove"
             >
               ✕
@@ -85,7 +85,7 @@ function FallbacksPanel({
       <button
         onClick={addFallback}
         disabled={readyProviders.length === 0}
-        className="text-[11px] text-[#6366f1] hover:text-[#818cf8] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+        className="text-[11px] text-accent hover:text-[#818cf8] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
       >
         + Add fallback
       </button>
@@ -236,18 +236,36 @@ export function Chat() {
       portRef.current = port;
       let accumulated = '';
 
+      // rAF-batched chunk updates
+      let chunkBuffer = '';
+      let rafId: number | null = null;
+
+      const flushChunks = () => {
+        if (chunkBuffer) {
+          accumulated += chunkBuffer;
+          chunkBuffer = '';
+          const content = accumulated;
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === assistantId ? { ...m, content } : m
+            )
+          );
+        }
+        rafId = null;
+      };
+
       port.onMessage.addListener((reply) => {
         // ── Text chunk ──────────────────────────────────────────────────
         if (reply.type === 'STREAM_CHUNK') {
-          accumulated += reply.content;
-          setMessages((prev) =>
-            prev.map((m) =>
-              m.id === assistantId ? { ...m, content: accumulated } : m
-            )
-          );
+          chunkBuffer += reply.content;
+          if (rafId === null) {
+            rafId = requestAnimationFrame(flushChunks);
+          }
 
         // ── Stream finished ─────────────────────────────────────────────
         } else if (reply.type === 'STREAM_END') {
+          if (rafId !== null) { cancelAnimationFrame(rafId); rafId = null; }
+          flushChunks();
           const cur = messagesRef.current.find((m) => m.id === assistantId);
           const finalMsg: Message = {
             ...assistantMsg,
@@ -263,6 +281,8 @@ export function Chat() {
 
         // ── Error ───────────────────────────────────────────────────────
         } else if (reply.type === 'STREAM_ERROR') {
+          if (rafId !== null) { cancelAnimationFrame(rafId); rafId = null; }
+          flushChunks();
           const cur = messagesRef.current.find((m) => m.id === assistantId);
           const errMsg: Message = {
             ...assistantMsg,
@@ -323,6 +343,7 @@ export function Chat() {
       });
 
       port.onDisconnect.addListener(() => {
+        if (rafId !== null) { cancelAnimationFrame(rafId); rafId = null; }
         const disconnectedId = streamingIdRef.current;
         resetStreamState();
         if (disconnectedId) {
@@ -354,6 +375,22 @@ export function Chat() {
       );
     }
   }, [resetStreamState]);
+
+  // ── Keyboard shortcuts ─────────────────────────────────────────────────
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !e.repeat) {
+        if (isStreaming) {
+          e.preventDefault();
+          abort();
+        } else {
+          textareaRef.current?.blur();
+        }
+      }
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [isStreaming, abort]);
 
   // ── Retry ─────────────────────────────────────────────────────────────────
   // Finds the user message in history, trims everything after it, and resends.
@@ -406,7 +443,7 @@ export function Chat() {
   if (!config || !appState) {
     return (
       <div className="flex items-center justify-center h-full">
-        <span className="text-xs text-[#94a3b8]">Loading…</span>
+        <span className="text-xs text-text-secondary">Loading…</span>
       </div>
     );
   }
@@ -418,7 +455,7 @@ export function Chat() {
   return (
     <div className="flex flex-col h-full overflow-hidden">
       {/* Header: model selector + actions */}
-      <div className="flex-none border-b border-[#1e1e35]">
+      <div className="flex-none border-b border-border">
         <div className="px-3 py-2 flex items-center gap-2">
           <div className="flex-1 min-w-0">
             <ModelSelector
@@ -433,10 +470,10 @@ export function Chat() {
             title={`Fallback providers${(config.fallbacks?.length ?? 0) > 0 ? ` (${config.fallbacks!.length} configured)` : ''}`}
             className={`relative flex-none w-7 h-7 flex items-center justify-center rounded-lg transition-colors ${
               showFallbacks
-                ? 'bg-[#6366f1]/20 text-[#6366f1]'
+                ? 'bg-accent/20 text-accent'
                 : (config.fallbacks?.length ?? 0) > 0
-                ? 'text-[#6366f1] hover:bg-[#1e1e35]'
-                : 'text-[#94a3b8] hover:bg-[#1e1e35] hover:text-[#f1f5f9]'
+                ? 'text-accent hover:bg-hover-bg'
+                : 'text-text-secondary hover:bg-hover-bg hover:text-text-primary'
             }`}
           >
             {/* Shuffle / retry-chain icon */}
@@ -447,7 +484,7 @@ export function Chat() {
               <path d="M13 8a5 5 0 0 1-8.5 3.5L3 10" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
             {(config.fallbacks?.length ?? 0) > 0 && (
-              <span className="absolute top-0.5 right-0.5 w-3.5 h-3.5 rounded-full bg-[#6366f1] text-white text-[8px] font-bold flex items-center justify-center leading-none">
+              <span className="absolute top-0.5 right-0.5 w-3.5 h-3.5 rounded-full bg-accent text-white text-[8px] font-bold flex items-center justify-center leading-none">
                 {config.fallbacks!.length}
               </span>
             )}
@@ -457,7 +494,7 @@ export function Chat() {
             onClick={clearChat}
             disabled={isActionsRunning || messages.length === 0}
             title="New session"
-            className="flex-none w-7 h-7 flex items-center justify-center rounded-lg hover:bg-[#1e1e35] text-[#94a3b8] hover:text-[#f1f5f9] transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+            className="flex-none w-7 h-7 flex items-center justify-center rounded-lg hover:bg-hover-bg text-text-secondary hover:text-text-primary transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
           >
             {/* New chat: speech bubble + plus */}
             <svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -469,8 +506,8 @@ export function Chat() {
 
         {/* Fallbacks panel */}
         {showFallbacks && (
-          <div className="px-3 pb-3 pt-1 border-t border-[#1e1e35]">
-            <p className="text-[10px] uppercase tracking-wider text-[#94a3b8] mb-2">
+          <div className="px-3 pb-3 pt-1 border-t border-border">
+            <p className="text-[10px] uppercase tracking-wider text-text-secondary mb-2">
               Fallback providers — tried in order if primary fails
             </p>
             <FallbacksPanel
@@ -496,18 +533,18 @@ export function Chat() {
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-3 py-3 space-y-3">
         {messages.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full gap-3 text-[#94a3b8]">
+          <div className="flex flex-col items-center justify-center h-full gap-3 text-text-secondary">
             <div
-              className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#6366f1] to-[#22d3ee] flex items-center justify-center text-white text-lg font-bold"
+              className="w-10 h-10 rounded-xl bg-gradient-to-br from-accent to-accent-cyan flex items-center justify-center text-white text-lg font-bold"
               style={{ boxShadow: '0 0 20px #6366f130' }}
             >
               ✦
             </div>
             <p className="text-sm font-medium">How can I help you today?</p>
             <div className="text-xs opacity-60 text-center leading-relaxed space-y-1">
-              <p>Try: <span className="text-[#6366f1]">"fill the form on screen"</span></p>
-              <p>or: <span className="text-[#6366f1]">"search for Claude AI capabilities"</span></p>
-              <p>or: <span className="text-[#6366f1]">"scroll down and click Sign In"</span></p>
+              <p>Try: <span className="text-accent">"fill the form on screen"</span></p>
+              <p>or: <span className="text-accent">"search for Claude AI capabilities"</span></p>
+              <p>or: <span className="text-accent">"scroll down and click Sign In"</span></p>
             </div>
           </div>
         ) : (
@@ -523,7 +560,7 @@ export function Chat() {
       </div>
 
       {/* Input */}
-      <div className="flex-none px-3 py-3 border-t border-[#1e1e35]">
+      <div className="flex-none px-3 py-3 border-t border-border">
         <div className="flex items-end gap-2">
           <textarea
             ref={textareaRef}
@@ -543,7 +580,7 @@ export function Chat() {
             }
             disabled={inputDisabled || (isStreaming && !actionsEverStarted.current)}
             rows={2}
-            className="flex-1 min-w-0 bg-[#0f0f1a] border border-[#1e1e35] rounded-xl px-3 py-2 text-sm text-[#f1f5f9] placeholder-[#94a3b8]/50 focus:outline-none focus:border-[#6366f1]/60 transition-colors leading-relaxed disabled:opacity-40 disabled:cursor-not-allowed"
+            className="flex-1 min-w-0 bg-surface border border-border rounded-xl px-3 py-2 text-sm text-text-primary placeholder-text-secondary/50 focus:outline-none focus:border-accent/60 transition-colors leading-relaxed disabled:opacity-40 disabled:cursor-not-allowed resize-none"
           />
           <div className="flex flex-col gap-1.5">
             {/* Show Stop when:
@@ -561,7 +598,7 @@ export function Chat() {
               <button
                 onClick={() => sendMessage(input)}
                 disabled={!input.trim() || noProvider}
-                className="px-3 py-2 rounded-xl bg-[#6366f1] hover:bg-[#5558e3] disabled:opacity-30 disabled:cursor-not-allowed text-white text-xs font-medium transition-colors"
+                className="px-3 py-2 rounded-xl bg-accent hover:bg-[#5558e3] disabled:opacity-30 disabled:cursor-not-allowed text-white text-xs font-medium transition-colors"
               >
                 Send
               </button>

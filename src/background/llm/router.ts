@@ -5,6 +5,7 @@ import { streamGemini } from './providers/gemini';
 import { streamOpenRouter } from './providers/openrouter';
 import { streamDeepSeek } from './providers/deepseek';
 import { streamOllama } from './providers/ollama';
+import { streamOpenCode } from './providers/opencode';
 
 export async function* routeLLM(
   messages: Message[],
@@ -20,7 +21,10 @@ export async function* routeLLM(
     throw new Error(`Provider "${provider.name}" is disabled. Enable it in the Providers tab.`);
   }
 
-  const keyFree = provider.id === 'ollama' || provider.apiFormat === 'ollama';
+  const keyFree =
+    provider.id === 'ollama' ||
+    provider.apiFormat === 'ollama' ||
+    provider.apiFormat === 'opencode';
   if (!provider.apiKey && !keyFree) {
     throw new Error(`No API key set for "${provider.name}". Add it in the Providers tab.`);
   }
@@ -49,6 +53,14 @@ export async function* routeLLM(
       break;
     case 'ollama':
       yield* streamOllama(messages, config, apiKey, baseUrl);
+      break;
+    case 'groq':
+      // Groq uses OpenAI-compatible API format
+      yield* streamOpenAI(messages, config, apiKey, baseUrl);
+      break;
+    case 'opencode':
+      // OpenCode local server — no API key needed
+      yield* streamOpenCode(messages, config, baseUrl);
       break;
     default:
       // Custom provider — assume OpenAI-compatible (most common standard)

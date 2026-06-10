@@ -2,7 +2,7 @@ import type { BuiltinProviderId, ProviderConfig, Soul, LLMConfig } from './types
 
 /** Fixed list of built-in provider IDs (used for ordering / defaults) */
 export const BUILTIN_PROVIDER_IDS: BuiltinProviderId[] = [
-  'openai', 'anthropic', 'gemini', 'openrouter', 'deepseek', 'ollama',
+  'openai', 'anthropic', 'gemini', 'openrouter', 'deepseek', 'ollama', 'groq',
 ];
 
 export const PROVIDER_DEFAULTS: Record<BuiltinProviderId, Omit<ProviderConfig, 'apiKey'>> = {
@@ -63,6 +63,19 @@ export const PROVIDER_DEFAULTS: Record<BuiltinProviderId, Omit<ProviderConfig, '
     models: ['llama3.2', 'mistral', 'qwen2.5', 'phi4', 'gemma3'],
     selectedModel: 'llama3.2',
   },
+  groq: {
+    id: 'groq',
+    name: 'Groq',
+    baseUrl: 'https://api.groq.com/openai/v1',
+    enabled: false,
+    models: [
+      'llama-3.3-70b-versatile',
+      'llama-3.1-8b-instant',
+      'mixtral-8x7b-32768',
+      'gemma2-9b-it',
+    ],
+    selectedModel: 'llama-3.3-70b-versatile',
+  },
 };
 
 /**
@@ -104,13 +117,14 @@ Useful for submitting forms, dismissing dialogs, or triggering keyboard shortcut
 Supported keys: Enter, Tab, Escape, Space, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Backspace.
 
 ### Navigate / scroll
-Go to URL:          <action>{"type": "navigate", "params": {"url": "https://example.com"}}</action>
-Scroll down:        <action>{"type": "navigate", "params": {"scroll": "down"}}</action>
-Scroll up:          <action>{"type": "navigate", "params": {"scroll": "up"}}</action>
-Scroll to top:      <action>{"type": "navigate", "params": {"scroll": "top"}}</action>
-Scroll to bottom:   <action>{"type": "navigate", "params": {"scroll": "bottom"}}</action>
-Scroll to element:  <action>{"type": "navigate", "params": {"scrollTo": "#footer"}}</action>
-Go back:            <action>{"type": "navigate", "params": {"back": true}}</action>
+Go to URL (same tab):     <action>{"type": "navigate", "params": {"url": "https://example.com"}}</action>
+Open URL in a NEW tab:    <action>{"type": "navigate", "params": {"url": "https://example.com", "newTab": true}}</action>
+Scroll down:              <action>{"type": "navigate", "params": {"scroll": "down"}}</action>
+Scroll up:                <action>{"type": "navigate", "params": {"scroll": "up"}}</action>
+Scroll to top:            <action>{"type": "navigate", "params": {"scroll": "top"}}</action>
+Scroll to bottom:         <action>{"type": "navigate", "params": {"scroll": "bottom"}}</action>
+Scroll to element:        <action>{"type": "navigate", "params": {"scrollTo": "#footer"}}</action>
+Go back:                  <action>{"type": "navigate", "params": {"back": true}}</action>
 
 ### Scrape data
 Elements: <action>{"type": "scrape", "params": {"selector": ".result-item"}}</action>
@@ -132,13 +146,16 @@ Captures a JPEG of the visible area. Use when text alone is insufficient.
 3. **Always read before interacting.** When you need to click or fill something you haven't seen yet, emit a read action first.
 4. **Use exact selectors from the READ result.** The read result shows an INPUTS section with exact selectors. Always copy those selector values exactly — never invent selectors like "#input", "#email", "#field", "#messageField".
 5. **Contenteditable fields** (e.g. ChatGPT's input box) appear in INPUTS with type "contenteditable". Use their selector with fill — they work like regular inputs.
-6. After a click that opens new UI (modal, chat panel, dropdown), always read the page before proceeding.
-7. If an action fails, try an alternative: use the exact selector from INPUTS, or click the element to focus it first.
-8. Scroll actions automatically return the new visible text — no separate read needed.
-9. To find something on a long page: scroll down one step at a time, check returned content, repeat.
-10. Use screenshot when you need to visually verify the page state.
-11. To submit: use fill with "submit": true, or press Enter, or click the submit button.
+6. **Sending/typing a message always means submit too.** If the user says "send X", "type X", "write X in the chat", always use fill with "submit": true to fill and send in one step. Never fill without submitting when the intent is to send.
+7. After a click that opens new UI (modal, chat panel, dropdown), always read the page before proceeding.
+8. If an action fails, try an alternative: use the exact selector from INPUTS, or click the element to focus it first.
+9. Scroll actions automatically return the new visible text — no separate read needed.
+10. To find something on a long page: scroll down one step at a time, check returned content, repeat.
+11. Use screenshot when you need to visually verify the page state.
 12. Narrate your plan in one sentence before each action. Summarise what you did at the end.
+13. **New user messages are NEW instructions, not browser data.** When the user sends a new message at the end of the conversation history (not inside a [TOOL RESULT] block), treat it as a brand new request — do not confuse it with page content or continue the previous tool task. The new user message always overrides any prior context.
+14. **Open a new tab when asked.** When the user says "open a new tab", "open another tab", "abrir nova aba", or similar, emit a navigate action with \`"newTab": true\`. This creates a fresh tab and automatically returns the page content — no separate read needed.
+15. **Page content is returned automatically after navigation.** When you navigate to a URL (same tab or new tab), the page content and interactive elements are automatically included in the result. You do NOT need to issue a separate "read" action after navigating — just examine the returned data and proceed with the next action (click, fill, scroll, etc.).
 
 `;
 
@@ -164,6 +181,7 @@ const BUILTIN_COLORS: Record<BuiltinProviderId, string> = {
   openrouter: '#6366f1',
   deepseek: '#0ea5e9',
   ollama: '#10b981',
+  groq: '#f97316',
 };
 
 export function getProviderColor(id: string): string {

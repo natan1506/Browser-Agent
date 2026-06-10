@@ -25,19 +25,22 @@ export type BuiltinProviderId =
   | 'gemini'
   | 'openrouter'
   | 'deepseek'
-  | 'ollama';
+  | 'ollama'
+  | 'groq';
 
 /** String to allow custom provider IDs alongside the built-in ones */
 export type ProviderId = string;
 
 /** Which streaming API wire-format a provider uses */
 export type ApiFormat =
-  | 'openai'      // OpenAI-compatible (also OpenRouter, DeepSeek, most custom)
+  | 'openai'      // OpenAI-compatible (also OpenRouter, DeepSeek, Groq, most custom)
   | 'anthropic'
   | 'gemini'
   | 'openrouter'
   | 'deepseek'
-  | 'ollama';
+  | 'ollama'
+  | 'groq'
+  | 'opencode';   // OpenCode local server (http://127.0.0.1:4096)
 
 export interface ProviderConfig {
   id: string;

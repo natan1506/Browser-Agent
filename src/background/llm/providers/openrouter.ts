@@ -1,4 +1,5 @@
 import type { Message, LLMConfig } from '../../../shared/types';
+import { streamSSE } from '../../../shared/stream';
 
 export async function* streamOpenRouter(
   messages: Message[],
@@ -40,32 +41,8 @@ export async function* streamOpenRouter(
     throw new Error(`OpenRouter ${response.status}: ${body}`);
   }
 
-  const reader = response.body!.getReader();
-  const decoder = new TextDecoder();
-  let buffer = '';
-
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-
-    buffer += decoder.decode(value, { stream: true });
-    const lines = buffer.split('\n');
-    buffer = lines.pop() ?? '';
-
-    for (const line of lines) {
-      if (!line.startsWith('data: ')) continue;
-      const data = line.slice(6).trim();
-      if (data === '[DONE]') return;
-
-      try {
-        const parsed = JSON.parse(data) as {
-          choices?: { delta?: { content?: string } }[];
-        };
-        const content = parsed.choices?.[0]?.delta?.content;
-        if (content) yield content;
-      } catch {
-        // skip malformed chunks
-      }
-    }
+  for await (const chunk of streamSSE<{ choices?: { delta?: { content?: string } }[] }>(response)) {
+    const content = chunk.choices?.[0]?.delta?.content;
+    if (content) yield content;
   }
 }

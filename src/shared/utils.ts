@@ -1,4 +1,4 @@
-import type { ProviderConfig, LLMConfig } from './types';
+import type { ProviderConfig, LLMConfig, ContentAction } from './types';
 import { BUILTIN_PROVIDER_IDS } from './constants';
 
 export interface ResolvedProvider {
@@ -11,7 +11,10 @@ export interface ResolvedProvider {
  * enabled AND has an API key (Ollama-format providers are key-free).
  */
 export function isProviderReady(p: ProviderConfig): boolean {
-  const keyFree = p.id === 'ollama' || p.apiFormat === 'ollama';
+  const keyFree =
+    p.id === 'ollama' ||
+    p.apiFormat === 'ollama' ||
+    p.apiFormat === 'opencode';
   return p.enabled && (!!p.apiKey || keyFree);
 }
 
@@ -72,4 +75,77 @@ export function applyResolvedProvider(
   resolved: ResolvedProvider
 ): LLMConfig {
   return { ...config, provider: resolved.provider, model: resolved.model };
+}
+
+// ─── Action tag parsing ─────────────────────────────────────────────────────
+
+/**
+ * Some models emit <tool_call><function=X>{...}</function></tool_call> instead
+ * of our <action> format. Normalise those into ContentAction objects.
+ */
+function parseToolCallTag(inner: string): ContentAction | null {
+  const fnMatch = inner.match(/<function=(\w+)>([\s\S]*?)<\/function>/);
+  if (fnMatch) {
+    const type = fnMatch[1] as ContentAction['type'];
+    try {
+      const params = JSON.parse(fnMatch[2].trim());
+      return { type, params };
+    } catch {
+      return { type, params: {} };
+    }
+  }
+  try {
+    return JSON.parse(inner.trim()) as ContentAction;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Normalise common JSON formatting issues that smaller LLMs produce:
+ * - single quotes instead of double quotes
+ * - unquoted keys
+ * - trailing commas
+ */
+function normalizeJSON(text: string): string {
+  return text
+    .replace(/'/g, '"')
+    .replace(/(\s+)(\w+)(\s*):/g, '"$2":')
+    .replace(/,(\s*[}\]])/g, '$1');
+}
+
+export function parseActionTags(text: string): ContentAction[] {
+  const actions: ContentAction[] = [];
+
+  // Also find tags wrapped inside markdown code fences
+  const clean = text.replace(/```[\s\S]*?```/g, (m) => {
+    // Strip fence markers but keep content for tag matching
+    return m.replace(/```\w*\n?/g, '');
+  });
+
+  const re1 = /<action>([\s\S]*?)<\/action>/g;
+  let m: RegExpExecArray | null;
+  while ((m = re1.exec(clean)) !== null) {
+    try {
+      const parsed = JSON.parse(normalizeJSON(m[1].trim())) as ContentAction;
+      if (parsed.type && parsed.params) actions.push(parsed);
+    } catch { /* skip malformed */ }
+  }
+
+  const re2 = /<tool_call>([\s\S]*?)<\/tool_call>/g;
+  while ((m = re2.exec(clean)) !== null) {
+    const action = parseToolCallTag(normalizeJSON(m[1]));
+    if (action) actions.push(action);
+  }
+
+  return actions;
+}
+
+export function stripActionTags(text: string): string {
+  return text
+    .replace(/<action>[\s\S]*?<\/action>/g, '')
+    .replace(/<tool_call>[\s\S]*?<\/tool_call>/g, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .replace(/ {2,}/g, ' ')
+    .trim();
 }

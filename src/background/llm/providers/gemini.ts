@@ -1,4 +1,5 @@
 import type { Message, LLMConfig } from '../../../shared/types';
+import { streamResponseLines } from '../../../shared/stream';
 
 type GeminiPart =
   | { text: string }
@@ -49,33 +50,21 @@ export async function* streamGemini(
     throw new Error(`Gemini ${response.status}: ${body}`);
   }
 
-  const reader = response.body!.getReader();
-  const decoder = new TextDecoder();
-  let buffer = '';
+  for await (const line of streamResponseLines(response)) {
+    if (!line.startsWith('data: ')) continue;
+    const data = line.slice(6).trim();
+    if (!data) continue;
 
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-
-    buffer += decoder.decode(value, { stream: true });
-    const lines = buffer.split('\n');
-    buffer = lines.pop() ?? '';
-
-    for (const line of lines) {
-      if (!line.startsWith('data: ')) continue;
-      const data = line.slice(6).trim();
-
-      try {
-        const parsed = JSON.parse(data) as {
-          candidates?: {
-            content?: { parts?: { text?: string }[] };
-          }[];
-        };
-        const text = parsed.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (text) yield text;
-      } catch {
-        // skip malformed chunks
-      }
+    try {
+      const parsed = JSON.parse(data) as {
+        candidates?: {
+          content?: { parts?: { text?: string }[] };
+        }[];
+      };
+      const text = parsed.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (text) yield text;
+    } catch {
+      console.warn('[Gemini] malformed chunk:', data.slice(0, 200));
     }
   }
 }

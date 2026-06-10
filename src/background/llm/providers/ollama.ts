@@ -1,4 +1,5 @@
 import type { Message, LLMConfig } from '../../../shared/types';
+import { streamJSONLines } from '../../../shared/stream';
 
 export async function* streamOllama(
   messages: Message[],
@@ -28,32 +29,9 @@ export async function* streamOllama(
     throw new Error(`Ollama ${response.status}: ${body}`);
   }
 
-  const reader = response.body!.getReader();
-  const decoder = new TextDecoder();
-  let buffer = '';
-
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-
-    buffer += decoder.decode(value, { stream: true });
-    const lines = buffer.split('\n');
-    buffer = lines.pop() ?? '';
-
-    for (const line of lines) {
-      if (!line.trim()) continue;
-
-      try {
-        const parsed = JSON.parse(line) as {
-          message?: { content?: string };
-          done?: boolean;
-        };
-        const content = parsed.message?.content;
-        if (content) yield content;
-        if (parsed.done) return;
-      } catch {
-        // skip malformed lines
-      }
-    }
+  for await (const chunk of streamJSONLines<{ message?: { content?: string }; done?: boolean }>(response)) {
+    const content = chunk.message?.content;
+    if (content) yield content;
+    if (chunk.done) return;
   }
 }

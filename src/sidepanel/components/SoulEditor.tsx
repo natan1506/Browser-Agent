@@ -48,7 +48,7 @@ export function SoulEditor({ soul, onChange }: SoulEditorProps) {
     <div className="space-y-5">
       {/* Identity */}
       <div>
-        <label className="block text-[10px] uppercase tracking-wider text-[#94a3b8] mb-2">
+        <label className="block text-[10px] uppercase tracking-wider text-text-secondary mb-2">
           Agent Name
         </label>
         <input
@@ -57,19 +57,19 @@ export function SoulEditor({ soul, onChange }: SoulEditorProps) {
           onChange={(e) => update({ name: e.target.value })}
           placeholder="e.g. Assistant, Aria, Max..."
           maxLength={40}
-          className="w-full bg-[#080810] border border-[#1e1e35] rounded-lg px-3 py-2 text-sm text-[#f1f5f9] placeholder-[#94a3b8]/50 focus:outline-none focus:border-[#6366f1] transition-colors"
+          className="w-full bg-page border border-border rounded-lg px-3 py-2 text-sm text-text-primary placeholder-text-secondary/50 focus:outline-none focus:border-accent transition-colors"
         />
       </div>
 
       {/* Language */}
       <div>
-        <label className="block text-[10px] uppercase tracking-wider text-[#94a3b8] mb-2">
+        <label className="block text-[10px] uppercase tracking-wider text-text-secondary mb-2">
           Response Language
         </label>
         <select
           value={local.language}
           onChange={(e) => update({ language: e.target.value })}
-          className="w-full bg-[#080810] border border-[#1e1e35] rounded-lg px-3 py-2 text-sm text-[#f1f5f9] focus:outline-none focus:border-[#6366f1] transition-colors"
+          className="w-full bg-page border border-border rounded-lg px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-accent transition-colors"
         >
           {LANGUAGES.map((lang) => (
             <option key={lang.code} value={lang.code}>
@@ -82,12 +82,12 @@ export function SoulEditor({ soul, onChange }: SoulEditorProps) {
       {/* System Prompt */}
       <div>
         <div className="flex items-center justify-between mb-2">
-          <label className="text-[10px] uppercase tracking-wider text-[#94a3b8]">
+          <label className="text-[10px] uppercase tracking-wider text-text-secondary">
             System Prompt
           </label>
           <span
             className={`text-[10px] tabular-nums ${
-              charCount > charLimit * 0.9 ? 'text-amber-400' : 'text-[#94a3b8]'
+              charCount > charLimit * 0.9 ? 'text-amber-400' : 'text-text-secondary'
             }`}
           >
             {charCount}/{charLimit}
@@ -99,18 +99,18 @@ export function SoulEditor({ soul, onChange }: SoulEditorProps) {
           maxLength={charLimit}
           rows={10}
           placeholder="Describe how the agent should behave..."
-          className="w-full bg-[#080810] border border-[#1e1e35] rounded-lg px-3 py-2.5 text-sm text-[#f1f5f9] placeholder-[#94a3b8]/50 focus:outline-none focus:border-[#6366f1] transition-colors leading-relaxed"
+          className="w-full bg-page border border-border rounded-lg px-3 py-2.5 text-sm text-text-primary placeholder-text-secondary/50 focus:outline-none focus:border-accent transition-colors leading-relaxed"
         />
       </div>
 
       {/* Save feedback */}
       <div className="flex items-center justify-between">
-        <p className="text-xs text-[#94a3b8]">
+        <p className="text-xs text-text-secondary">
           Changes are auto-saved and applied to new conversations.
         </p>
         <span
           className={`text-xs transition-opacity duration-300 ${
-            saved ? 'opacity-100 text-[#10b981]' : 'opacity-0'
+            saved ? 'opacity-100 text-success' : 'opacity-0'
           }`}
         >
           Saved ✓
