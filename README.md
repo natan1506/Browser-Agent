@@ -1,9 +1,10 @@
+
 # AI Browser Agent
 
 Extensão para Chrome/Chromium que usa LLMs (Large Language Models) para **automatizar tarefas no navegador** — preencher formulários, navegar, pesquisar, clicar, extrair dados e muito mais. Tudo via linguagem natural.
 
-![Chat principal](https://placehold.co/800x500/1a1a2e/6366f1?text=AI+Browser+Agent+-+Chat+View&font=montserrat)
-<!-- Substitua pelo print real: extensão aberta com chat, mostrando uma conversa com steps de navegação -->
+<img width="377" height="947" alt="Screen Shot 2026-06-16 at 14 36 47" src="https://github.com/user-attachments/assets/f33e83b8-437c-49c6-b19e-efcfbee9668f" />
+
 
 ---
 
@@ -26,23 +27,18 @@ Extensão para Chrome/Chromium que usa LLMs (Large Language Models) para **autom
 
 ### Chat com steps de navegação
 
-![Chat com steps](https://placehold.co/800x400/1a1a2e/6366f1?text=Navegando+para+YouTube+e+pesquisando&font=montserrat)
-<!-- Print mostrando: mensagem do usuário "abra o youtube e pesquise sobre IA", seguida dos steps "🧭 Navigating: youtube.com ✅ → ✏️ Filling form: input[name=search_query] ✅" -->
+<img width="2013" height="966" alt="Screen Shot 2026-06-16 at 14 37 58" src="https://github.com/user-attachments/assets/bb800734-237f-4186-9315-655552acb300" />
 
-### Upload de arquivos
-
-![Upload de arquivos](https://placehold.co/800x300/1a1a2e/f97316?text=Anexando+imagem+e+PDF&font=montserrat)
-<!-- Print mostrando: input de texto com botão 📎, preview de thumbnail de imagem + ícone de PDF, e mensagem enviada com os arquivos visíveis -->
 
 ### Configuração de providers
 
-![Providers](https://placehold.co/800x400/1a1a2e/10b981?text=Providers:+Groq,+OpenAI,+Claude,+Gemini&font=montserrat)
-<!-- Print da aba Providers mostrando vários providers configurados, com destaque no provider ativo -->
+<img width="378" height="967" alt="Screen Shot 2026-06-16 at 14 38 52" src="https://github.com/user-attachments/assets/25617634-65c5-4887-8cb8-859176e9607b" />
+
 
 ### Alma do agente (customização)
 
-![Soul](https://placehold.co/800x350/1a1a2e/a855f7?text=Agent+Soul:+Personalidade+e+idioma&font=montserrat)
-<!-- Print da aba Soul com editor de nome, prompt de personalidade e seletor de idioma -->
+
+<img width="373" height="966" alt="Screen Shot 2026-06-16 at 14 39 05" src="https://github.com/user-attachments/assets/91b21ae7-1d4c-4cb0-bb64-1e81af7c4d95" />
 
 ---
 
@@ -73,8 +69,8 @@ npm run build
 
 Clique no ícone da extensão na barra de ferramentas → aba **Providers**:
 
-![Provider setup](https://placehold.co/600x300/1a1a2e/6366f1?text=Ative+um+provider+e+adicione+a+API+key&font=montserrat)
-<!-- Print da tela de providers mostrando campos de API key, modelo selecionado, toggle enable -->
+<img width="378" height="967" alt="Screen Shot 2026-06-16 at 14 38 52" src="https://github.com/user-attachments/assets/15ce8db0-df93-4a2c-bd3c-3dae01444b7b" />
+
 
 | Provider | API Key | Modelo sugerido |
 |----------|---------|----------------|
@@ -90,7 +86,7 @@ Clique no ícone da extensão na barra de ferramentas → aba **Providers**:
 
 Abra o sidepanel (clique no ícone da extensão) e converse:
 
-![Exemplo de uso](https://placehold.co/800x400/1a1a2e/6366f1?text=Exemplo:+%22preencha+o+formul%C3%A1rio+na+tela%22&font=montserrat)
+<img width="378" height="967" alt="Screen Shot 2026-06-16 at 14 39 37" src="https://github.com/user-attachments/assets/fd70165f-cba9-4345-98c4-6efb4984cc5c" />
 
 ---
 
@@ -134,7 +130,8 @@ O agente vê a imagem, entende a estrutura do formulário e replica no site real
 
 Na aba de chat, clique no ícone 🔀 para configurar fallbacks:
 
-![Fallback config](https://placehold.co/600x250/1a1a2e/f59e0b?text=Configure+fallbacks+em+ordem+de+prioridade&font=montserrat)
+<img width="374" height="967" alt="Screen Shot 2026-06-16 at 14 40 01" src="https://github.com/user-attachments/assets/7d08e0e7-bad9-4344-ad15-caf8b7efd6a5" />
+
 
 Se o provider principal falhar (timeout, rate limit, erro), o sistema tenta automaticamente o próximo da lista.
 
