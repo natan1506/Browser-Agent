@@ -55,8 +55,7 @@ export async function* routeLLM(
       yield* streamOllama(messages, config, apiKey, baseUrl);
       break;
     case 'groq':
-      // Groq uses OpenAI-compatible API format
-      yield* streamOpenAI(messages, config, apiKey, baseUrl);
+      yield* streamOpenAI(messages, config, apiKey, baseUrl, 'groq');
       break;
     case 'opencode':
       // OpenCode local server — no API key needed

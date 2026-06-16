@@ -50,6 +50,7 @@ vite.config.ts.timestamp-*
 .idea/
 .vscode/
 .claude/
+.opencode/
 *.suo
 *.ntvs*
 *.njsproj

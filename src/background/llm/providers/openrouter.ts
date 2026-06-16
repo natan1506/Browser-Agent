@@ -1,5 +1,6 @@
 import type { Message, LLMConfig } from '../../../shared/types';
 import { streamSSE } from '../../../shared/stream';
+import { buildMessageContent } from '../../../shared/utils';
 
 export async function* streamOpenRouter(
   messages: Message[],
@@ -19,16 +20,10 @@ export async function* streamOpenRouter(
       model: config.model,
       messages: [
         { role: 'system', content: config.systemPrompt },
-        ...messages.map((m) => {
-          if (!m.screenshot) return { role: m.role, content: m.content };
-          return {
-            role: m.role,
-            content: [
-              { type: 'text', text: m.content },
-              { type: 'image_url', image_url: { url: m.screenshot } },
-            ],
-          };
-        }),
+        ...messages.map((m) => ({
+          role: m.role,
+          content: buildMessageContent(m, 'openrouter'),
+        })),
       ],
       temperature: config.temperature,
       max_tokens: config.maxTokens,

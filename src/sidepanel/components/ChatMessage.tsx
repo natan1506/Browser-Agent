@@ -126,11 +126,32 @@ export function ChatMessage({ message, onRetry }: ChatMessageProps) {
   const isDone = !message.isStreaming;
 
   if (isUser) {
+    const files = message.files ?? [];
     return (
       <div className="flex justify-end animate-slide-in">
         <div className="group max-w-[85%] space-y-1">
           <div className="px-3 py-2 rounded-2xl rounded-tr-sm bg-accent/20 border border-accent/30 text-text-primary text-sm leading-relaxed">
-            <p className="whitespace-pre-wrap break-words">{message.content}</p>
+            {files.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mb-2">
+                {files.map((f) => (
+                  <div key={f.id} className="flex items-center gap-1 px-1.5 py-1 rounded-lg bg-page/60 border border-border/60">
+                    {f.type === 'application/pdf' ? (
+                      <span className="text-red-400 text-sm">📄</span>
+                    ) : (
+                      <img
+                        src={f.data}
+                        alt={f.name}
+                        className="w-8 h-8 rounded object-cover border border-border/40"
+                      />
+                    )}
+                    <span className="text-[11px] text-text-secondary max-w-[80px] truncate">{f.name}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+            {message.content && (
+              <p className="whitespace-pre-wrap break-words">{message.content}</p>
+            )}
           </div>
 
           {/* Action bar — only visible on hover */}

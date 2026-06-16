@@ -1,5 +1,6 @@
 import type { Message, LLMConfig } from '../../../shared/types';
 import { streamJSONLines } from '../../../shared/stream';
+import { buildMessageContent } from '../../../shared/utils';
 
 export async function* streamOllama(
   messages: Message[],
@@ -14,7 +15,7 @@ export async function* streamOllama(
       model: config.model,
       messages: [
         { role: 'system', content: config.systemPrompt },
-        ...messages.map((m) => ({ role: m.role, content: m.content })),
+        ...messages.map((m) => ({ role: m.role, content: buildMessageContent(m, 'ollama') })),
       ],
       stream: true,
       options: {

@@ -12,6 +12,7 @@ import type {
   ContentAction,
   ActionResult,
   FallbackConfig,
+  FileAttachment,
 } from '../../shared/types';
 
 // ── Fallbacks panel ───────────────────────────────────────────────────────
@@ -102,12 +103,14 @@ export function Chat() {
   /** True only while an action step is actively executing (Stop button visible) */
   const [isActionsRunning, setIsActionsRunning] = useState(false);
   const [showFallbacks, setShowFallbacks] = useState(false);
+  const [attachedFiles, setAttachedFiles] = useState<FileAttachment[]>([]);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const portRef = useRef<chrome.runtime.Port | null>(null);
   const streamingIdRef = useRef<string | null>(null);
   const lastStepIdRef = useRef<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const activeActionsRef = useRef(0);       // count of in-flight action steps
   const actionsEverStarted = useRef(false); // true once first AGENT_RESULT arrives
   // Refs that mirror state so we can read current values outside of state updaters
@@ -180,6 +183,55 @@ export function Chat() {
     });
   }, []);
 
+  // ── File handling ──────────────────────────────────────────────────────────
+  const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
+  const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf'];
+
+  const handleFileSelect = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const fileList = e.target.files;
+    if (!fileList || fileList.length === 0) return;
+
+    const newFiles: FileAttachment[] = [];
+
+    for (const file of Array.from(fileList)) {
+      if (newFiles.length + attachedFiles.length >= 5) {
+        console.warn('[Chat] Max 5 files');
+        break;
+      }
+      if (!ALLOWED_TYPES.includes(file.type)) {
+        console.warn(`[Chat] Unsupported type: ${file.type}`);
+        continue;
+      }
+      if (file.size > MAX_FILE_SIZE) {
+        console.warn(`[Chat] File too large: ${file.name}`);
+        continue;
+      }
+
+      const data = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = () => reject(reader.error);
+        reader.readAsDataURL(file);
+      });
+
+      newFiles.push({
+        id: crypto.randomUUID(),
+        name: file.name,
+        type: file.type,
+        data,
+        size: file.size,
+      });
+    }
+
+    setAttachedFiles((prev) => [...prev, ...newFiles]);
+    // Reset input so re-selecting the same file triggers onChange
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  }, [attachedFiles.length]);
+
+  const removeFile = useCallback((id: string) => {
+    setAttachedFiles((prev) => prev.filter((f) => f.id !== id));
+  }, []);
+
   // ── Internal: reset all streaming state ───────────────────────────────────
   const resetStreamState = useCallback(() => {
     activeActionsRef.current = 0;
@@ -191,7 +243,8 @@ export function Chat() {
   // ── Send ──────────────────────────────────────────────────────────────────
   const sendMessage = useCallback(
     async (content: string) => {
-      if (!config || isActionsRunning || !content.trim()) return;
+      if (!config || isActionsRunning) return;
+      const filesToSend = attachedFiles.length > 0 ? [...attachedFiles] : undefined;
 
       // If LLM is writing its final summary (streaming text, no active actions),
       // abort that cleanly then proceed with the new message immediately.
@@ -213,6 +266,7 @@ export function Chat() {
         role: 'user',
         content: content.trim(),
         timestamp: Date.now(),
+        files: filesToSend,
       };
 
       const assistantId = crypto.randomUUID();
@@ -231,6 +285,7 @@ export function Chat() {
       setMessages([...history, assistantMsg]);
       setIsStreaming(true);
       setInput('');
+      setAttachedFiles([]);
 
       const port = chrome.runtime.connect({ name: 'agent' });
       portRef.current = port;
@@ -357,7 +412,7 @@ export function Chat() {
 
       port.postMessage({ type: 'CHAT', messages: history, config });
     },
-    [config, isActionsRunning, isStreaming, resetStreamState]
+    [config, isActionsRunning, isStreaming, attachedFiles, resetStreamState]
   );
 
   const abort = useCallback(() => {
@@ -561,7 +616,60 @@ export function Chat() {
 
       {/* Input */}
       <div className="flex-none px-3 py-3 border-t border-border">
+        {/* Hidden file input */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*,.pdf"
+          multiple
+          onChange={handleFileSelect}
+          className="hidden"
+        />
+
+        {/* File preview */}
+        {attachedFiles.length > 0 && (
+          <div className="flex flex-wrap gap-2 mb-2">
+            {attachedFiles.map((f) => (
+              <div
+                key={f.id}
+                className="group relative flex items-center gap-1.5 px-2 py-1 rounded-lg bg-surface border border-border text-xs text-text-secondary"
+              >
+                {f.type === 'application/pdf' ? (
+                  <span className="text-red-400 text-sm">📄</span>
+                ) : (
+                  <img
+                    src={f.data}
+                    alt={f.name}
+                    className="w-7 h-7 rounded object-cover"
+                  />
+                )}
+                <span className="max-w-[100px] truncate">{f.name}</span>
+                <span className="text-[10px] text-text-secondary/60">
+                  {(f.size / 1024).toFixed(0)}KB
+                </span>
+                <button
+                  onClick={() => removeFile(f.id)}
+                  className="ml-0.5 text-text-secondary hover:text-red-400 transition-colors text-sm leading-none"
+                >
+                  ✕
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
         <div className="flex items-end gap-2">
+          {/* Attachment button */}
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={inputDisabled || attachedFiles.length >= 5}
+            title={attachedFiles.length >= 5 ? 'Max 5 files' : 'Attach image or PDF'}
+            className="flex-none w-9 h-9 flex items-center justify-center rounded-xl bg-surface border border-border hover:border-accent/40 hover:text-accent transition-colors disabled:opacity-30 disabled:cursor-not-allowed text-text-secondary"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
+            </svg>
+          </button>
           <textarea
             ref={textareaRef}
             value={input}
@@ -597,7 +705,7 @@ export function Chat() {
             ) : (
               <button
                 onClick={() => sendMessage(input)}
-                disabled={!input.trim() || noProvider}
+                disabled={(!input.trim() && attachedFiles.length === 0) || noProvider}
                 className="px-3 py-2 rounded-xl bg-accent hover:bg-[#5558e3] disabled:opacity-30 disabled:cursor-not-allowed text-white text-xs font-medium transition-colors"
               >
                 Send

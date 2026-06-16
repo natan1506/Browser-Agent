@@ -1,5 +1,6 @@
 import type { Message, LLMConfig } from '../../../shared/types';
 import { streamResponseLines } from '../../../shared/stream';
+import { buildMessageContent } from '../../../shared/utils';
 
 export async function* streamAnthropic(
   messages: Message[],
@@ -21,17 +22,10 @@ export async function* streamAnthropic(
       system: config.systemPrompt,
       messages: messages
         .filter((m) => m.role !== 'system')
-        .map((m) => {
-          if (!m.screenshot) return { role: m.role, content: m.content };
-          const base64 = m.screenshot.split(',')[1] ?? '';
-          return {
-            role: m.role,
-            content: [
-              { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: base64 } },
-              { type: 'text', text: m.content },
-            ],
-          };
-        }),
+        .map((m) => ({
+          role: m.role,
+          content: buildMessageContent(m, 'anthropic'),
+        })),
       stream: true,
       temperature: config.temperature,
     }),

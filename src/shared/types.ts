@@ -7,6 +7,14 @@ export interface AgentStep {
   preview?: string;
 }
 
+export interface FileAttachment {
+  id: string;
+  name: string;
+  type: string;    // MIME type (image/jpeg, image/png, application/pdf, etc.)
+  data: string;    // base64 data URL (e.g. data:image/png;base64,...)
+  size: number;    // file size in bytes
+}
+
 export interface Message {
   id: string;
   role: Role;
@@ -16,6 +24,8 @@ export interface Message {
   steps?: AgentStep[];
   /** base64 data URL from captureVisibleTab — attached to tool-result messages for vision LLMs */
   screenshot?: string;
+  /** User-uploaded files (images, PDFs) attached to this message */
+  files?: FileAttachment[];
 }
 
 /** IDs of the built-in providers */

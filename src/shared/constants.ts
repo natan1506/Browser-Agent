@@ -156,6 +156,7 @@ Captures a JPEG of the visible area. Use when text alone is insufficient.
 13. **New user messages are NEW instructions, not browser data.** When the user sends a new message at the end of the conversation history (not inside a [TOOL RESULT] block), treat it as a brand new request — do not confuse it with page content or continue the previous tool task. The new user message always overrides any prior context.
 14. **Open a new tab when asked.** When the user says "open a new tab", "open another tab", "abrir nova aba", or similar, emit a navigate action with \`"newTab": true\`. This creates a fresh tab and automatically returns the page content — no separate read needed.
 15. **Page content is returned automatically after navigation.** When you navigate to a URL (same tab or new tab), the page content and interactive elements are automatically included in the result. You do NOT need to issue a separate "read" action after navigating — just examine the returned data and proceed with the next action (click, fill, scroll, etc.).
+16. **Uploaded files (images/PDFs) are available for analysis.** If the user attaches an image or PDF to their message, it is sent alongside their text. Use the content of these files to understand the task. For example, if they attach a screenshot of a form and ask you to fill it on the current page, read the image to understand the fields, then fill them on the real page. Do NOT describe the image back to the user unless they ask — just use it to inform your actions.
 
 `;
 

@@ -1,4 +1,4 @@
-import type { ProviderConfig, LLMConfig, ContentAction } from './types';
+import type { ProviderConfig, LLMConfig, ContentAction, Message, ApiFormat } from './types';
 import { BUILTIN_PROVIDER_IDS } from './constants';
 
 export interface ResolvedProvider {
@@ -148,4 +148,94 @@ export function stripActionTags(text: string): string {
     .replace(/\n{3,}/g, '\n\n')
     .replace(/ {2,}/g, ' ')
     .trim();
+}
+
+// ─── File/message content builder ──────────────────────────────────────────
+
+function extractBase64(dataUrl: string): string {
+  return dataUrl.startsWith('data:') ? (dataUrl.split(',')[1] ?? dataUrl) : dataUrl;
+}
+
+/**
+ * Builds the content payload for a message based on the provider API format.
+ *
+ * When the message has no files or screenshots, returns a plain string (text-only).
+ * When media is present, returns an array of content parts in the provider's format:
+ *
+ * - 'openai' / 'openrouter' / 'groq': `{ type: 'text'|'image_url', ... }`
+ * - 'anthropic': `{ type: 'text'|'image'|'document', source: {...} }`
+ * - 'gemini': `{ text } | { inlineData: { mimeType, data } }`
+ * - default (non-vision): plain string with file notes appended
+ */
+export function buildMessageContent(msg: Message, format: ApiFormat): unknown {
+  const text = msg.content;
+  const files = msg.files ?? [];
+  const hasScreenshot = !!msg.screenshot;
+
+  const hasMedia = files.length > 0 || hasScreenshot;
+
+  // Plain text — no media
+  if (!hasMedia) return text;
+
+  switch (format) {
+    case 'openai':
+    case 'openrouter':
+    case 'groq': {
+      const parts: Record<string, unknown>[] = [{ type: 'text', text }];
+      if (hasScreenshot) {
+        parts.push({ type: 'image_url', image_url: { url: msg.screenshot } });
+      }
+      for (const f of files) {
+        if (f.type === 'application/pdf') {
+          parts.push({ type: 'text', text: `[📎 PDF: ${f.name}]` });
+        } else {
+          parts.push({ type: 'image_url', image_url: { url: f.data } });
+        }
+      }
+      return parts;
+    }
+
+    case 'anthropic': {
+      const parts: Record<string, unknown>[] = [{ type: 'text', text }];
+      if (hasScreenshot) {
+        parts.push({
+          type: 'image',
+          source: { type: 'base64', media_type: 'image/jpeg', data: extractBase64(msg.screenshot!) },
+        });
+      }
+      for (const f of files) {
+        const data = extractBase64(f.data);
+        if (f.type === 'application/pdf') {
+          parts.push({
+            type: 'document',
+            source: { type: 'base64', media_type: 'application/pdf', data },
+          });
+        } else {
+          parts.push({
+            type: 'image',
+            source: { type: 'base64', media_type: f.type, data },
+          });
+        }
+      }
+      return parts;
+    }
+
+    case 'gemini': {
+      const parts: Record<string, unknown>[] = [{ text }];
+      if (hasScreenshot) {
+        parts.push({ inlineData: { mimeType: 'image/jpeg', data: extractBase64(msg.screenshot!) } });
+      }
+      for (const f of files) {
+        parts.push({ inlineData: { mimeType: f.type, data: extractBase64(f.data) } });
+      }
+      return parts;
+    }
+
+    default: {
+      // Non-vision providers: append file notes as text
+      if (files.length === 0) return text;
+      const notes = files.map((f) => `[📎 ${f.name} (${(f.size / 1024).toFixed(0)} KB)]`);
+      return `${text}\n\n${notes.join('\n')}`;
+    }
+  }
 }

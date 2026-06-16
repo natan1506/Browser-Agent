@@ -1,5 +1,6 @@
 import type { Message, LLMConfig } from '../../../shared/types';
 import { streamResponseLines } from '../../../shared/stream';
+import { buildMessageContent } from '../../../shared/utils';
 
 type GeminiPart =
   | { text: string }
@@ -18,14 +19,10 @@ export async function* streamGemini(
 ): AsyncGenerator<string> {
   const contents: GeminiContent[] = messages
     .filter((m) => m.role !== 'system')
-    .map((m) => {
-      const parts: GeminiPart[] = [{ text: m.content }];
-      if (m.screenshot) {
-        const base64 = m.screenshot.split(',')[1] ?? '';
-        parts.push({ inlineData: { mimeType: 'image/jpeg', data: base64 } });
-      }
-      return { role: m.role === 'assistant' ? 'model' : 'user', parts };
-    });
+    .map((m) => ({
+      role: m.role === 'assistant' ? 'model' : 'user',
+      parts: buildMessageContent(m, 'gemini') as GeminiPart[],
+    }));
 
   const response = await fetch(
     `${baseUrl}/v1beta/models/${config.model}:streamGenerateContent?alt=sse&key=${apiKey}`,

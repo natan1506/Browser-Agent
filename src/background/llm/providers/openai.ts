@@ -1,11 +1,13 @@
-import type { Message, LLMConfig } from '../../../shared/types';
+import type { Message, LLMConfig, ApiFormat } from '../../../shared/types';
 import { streamSSE } from '../../../shared/stream';
+import { buildMessageContent } from '../../../shared/utils';
 
 export async function* streamOpenAI(
   messages: Message[],
   config: LLMConfig,
   apiKey: string,
-  baseUrl: string
+  baseUrl: string,
+  apiFormat: ApiFormat = 'openai'
 ): AsyncGenerator<string> {
   const response = await fetch(`${baseUrl}/chat/completions`, {
     method: 'POST',
@@ -17,16 +19,10 @@ export async function* streamOpenAI(
       model: config.model,
       messages: [
         { role: 'system', content: config.systemPrompt },
-        ...messages.map((m) => {
-          if (!m.screenshot) return { role: m.role, content: m.content };
-          return {
-            role: m.role,
-            content: [
-              { type: 'text', text: m.content },
-              { type: 'image_url', image_url: { url: m.screenshot } },
-            ],
-          };
-        }),
+        ...messages.map((m) => ({
+          role: m.role,
+          content: buildMessageContent(m, apiFormat),
+        })),
       ],
       temperature: config.temperature,
       max_tokens: config.maxTokens,
